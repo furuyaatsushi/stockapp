@@ -28,29 +28,6 @@ import org.springframework.security.web.SecurityFilterChain;
     }
 
     @Bean
-    public UserDetailsService userDetailsService(PasswordEncoder passwordEncoder) {
-        UserDetails admin = User.builder()
-                .username("admin")
-                .password(passwordEncoder.encode("password"))
-                .roles("ADMIN")
-                .build();
-        
-        UserDetails user1 = User.builder()
-            .username("user1")
-            .password(passwordEncoder.encode("password1"))
-            .roles("USER")
-            .build();
-
-    UserDetails user2 = User.builder()
-            .username("user2")
-            .password(passwordEncoder.encode("password2"))
-            .roles("USER")
-            .build();
-
-        return new InMemoryUserDetailsManager(admin, user1, user2);
-    }
-
-    @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
