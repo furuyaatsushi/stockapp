@@ -6,12 +6,17 @@ import com.example.stockapp.repository.UserRepository;
 import com.example.stockapp.service.StockTradeService;
 import com.example.stockapp.dto.StockTradeDto;
 import com.example.stockapp.dto.StockHoldingDto;
+import com.example.stockapp.dto.StockTradeRequest;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.security.core.Authentication;
 
+import java.security.Principal;
 import java.util.List;
 
 @RestController
@@ -50,4 +55,44 @@ public class StockTradeController {
         return stockTradeService.getCurrentHoldings(user);
     }
 
+    @PostMapping("/buy")
+    public void buy(
+            Principal principal,
+            @RequestBody StockTradeRequest request
+    ) {
+        String username = principal.getName();
+        System.out.println("username = " + username);
+
+        User user = userRepository
+                .findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません"));
+
+        stockTradeService.buyStock(
+                user,
+                request.getStockCode(),
+                request.getStockName(),
+                request.getQuantity(),
+                request.getPrice(),
+                request.getTradeDate()
+        );
+    }
+
+
+    @PostMapping("/sell")
+    public void sell(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestBody StockTradeRequest request
+    ) {
+        User user = userRepository
+                .findByUsername(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません"));
+
+        stockTradeService.sellStock(
+                user,
+                request.getStockCode(),
+                request.getQuantity(),
+                request.getPrice(),
+                request.getTradeDate()
+        );
+    }
 }

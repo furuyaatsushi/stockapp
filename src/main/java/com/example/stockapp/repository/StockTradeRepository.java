@@ -20,4 +20,9 @@ public interface StockTradeRepository
     List<StockTrade> findByUserIdAndStockId(Long userId, Long stockId);
 
     List<StockTrade> findByUserOrderByTradeDateDesc(User user);
+
+    List<StockTrade> findByUserAndStock_StockCode(
+            User user,
+            String stockCode
+    );
 }

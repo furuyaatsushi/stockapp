@@ -3,6 +3,9 @@ package com.example.stockapp.entity;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import java.math.BigDecimal;
 
 @Entity
 @Table(name = "stock_trades")
@@ -23,8 +26,10 @@ public class StockTrade {
     private Stock stock;
 
     // BUY / SELL
-    @Column(name = "trade_type", nullable = false, length = 4)
-    private String tradeType;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "trade_type", nullable = false)
+    private TradeType tradeType;
+
 
     @Column(name = "trade_date", nullable = false)
     private LocalDate tradeDate;
@@ -37,6 +42,9 @@ public class StockTrade {
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
+
+    @Column(precision = 15, scale = 2)
+    private BigDecimal realizedProfit;
 
     @PrePersist
     protected void onCreate() {
@@ -65,11 +73,11 @@ public class StockTrade {
         this.stock = stock;
     }
 
-    public String getTradeType() {
+    public TradeType getTradeType() {
         return tradeType;
     }
 
-    public void setTradeType(String tradeType) {
+    public void setTradeType(TradeType tradeType) {
         this.tradeType = tradeType;
     }
 
@@ -100,5 +108,14 @@ public class StockTrade {
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
+
+    public BigDecimal getRealizedProfit() {
+        return realizedProfit;
+    }
+
+    public void setRealizedProfit(BigDecimal realizedProfit) {
+        this.realizedProfit = realizedProfit;
+    }
+
 }
 

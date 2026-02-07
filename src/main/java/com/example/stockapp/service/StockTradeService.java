@@ -3,6 +3,7 @@ package com.example.stockapp.service;
 import com.example.stockapp.entity.Stock;
 import com.example.stockapp.entity.StockTrade;
 import com.example.stockapp.entity.User;
+import com.example.stockapp.entity.TradeType;
 import com.example.stockapp.dto.StockHoldingDto;
 import com.example.stockapp.dto.StockTradeDto;
 import com.example.stockapp.repository.StockRepository;
@@ -72,14 +73,14 @@ public class StockTradeService {
             BigDecimal totalBuyAmount = BigDecimal.ZERO;
 
             for (StockTrade trade : stockTrades) {
-                if ("BUY".equals(trade.getTradeType())) {
+                if (trade.getTradeType() == TradeType.BUY) {
                     totalQuantity += trade.getQuantity();
                     totalBuyAmount = totalBuyAmount.add(
                             trade.getPrice()
-                                .multiply(BigDecimal.valueOf(trade.getQuantity()))
+                                    .multiply(BigDecimal.valueOf(trade.getQuantity()))
                     );
-                } else if ("SELL".equals(trade.getTradeType())) {
-                    totalQuantity -= trade.getQuantity();
+                } else if (trade.getTradeType() == TradeType.SELL) {
+                        totalQuantity -= trade.getQuantity();
                 }
             }
 
@@ -116,6 +117,7 @@ public class StockTradeService {
             BigDecimal price,
             LocalDate tradeDate) {
 
+        System.out.println("buyStock called");
         // 銘柄がなければ作成
         Stock stock = stockRepository
                 .findByStockCode(stockCode)
@@ -129,7 +131,7 @@ public class StockTradeService {
         StockTrade trade = new StockTrade();
         trade.setUser(user);
         trade.setStock(stock);
-        trade.setTradeType("BUY");
+        trade.setTradeType(TradeType.BUY);
         trade.setQuantity(quantity);
         trade.setPrice(price);
         trade.setTradeDate(tradeDate);
@@ -150,15 +152,56 @@ public class StockTradeService {
                 .orElseThrow(() ->
                         new IllegalArgumentException("銘柄が存在しません"));
 
+        BigDecimal avgPrice = calculateAveragePrice(user, stockCode);
+
+        BigDecimal realizedProfit =
+                price.subtract(avgPrice)
+                        .multiply(BigDecimal.valueOf(quantity));
+
         StockTrade trade = new StockTrade();
         trade.setUser(user);
         trade.setStock(stock);
-        trade.setTradeType("SELL");
+        trade.setTradeType(TradeType.SELL);
         trade.setQuantity(quantity);
         trade.setPrice(price);
         trade.setTradeDate(tradeDate);
+        trade.setRealizedProfit(realizedProfit);
 
         stockTradeRepository.save(trade);
     }
+
+
+    public BigDecimal calculateAveragePrice(
+            User user,
+            String stockCode) {
+
+        List<StockTrade> trades =
+                stockTradeRepository.findByUserAndStock_StockCode(user, stockCode);
+
+        int totalQty = 0;
+        BigDecimal totalAmount = BigDecimal.ZERO;
+
+        for (StockTrade trade : trades) {
+            if (trade.getTradeType() == TradeType.BUY) {
+                totalQty += trade.getQuantity();
+                totalAmount = totalAmount.add(
+                        trade.getPrice().multiply(BigDecimal.valueOf(trade.getQuantity()))
+                );
+            } else if (trade.getTradeType() == TradeType.SELL) {
+                totalQty -= trade.getQuantity();
+            }
+        }
+
+        if (totalQty <= 0) {
+            throw new IllegalStateException("保有数量がありません");
+        }
+
+        return totalAmount.divide(
+                BigDecimal.valueOf(totalQty),
+                2,
+                RoundingMode.HALF_UP
+        );
+    }
+
 }
 
