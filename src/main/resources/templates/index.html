@@ -16,12 +16,6 @@
             background-color: #f5f5f5;
         }
 
-        header {
-            background-color: #1e88e5;
-            color: white;
-            padding: 1rem;
-        }
-
         main {
             padding: 2rem;
         }
@@ -43,32 +37,54 @@
     </style>
 </head>
 <body>
+<div th:replace="~{layout/header :: header}"></div>
 
-<header>
-    <h1>株管理アプリ</h1>
-</header>
+<main class="container">
 
-<main>
-    <div class="card">
-        <p>
+    <!-- ユーザー表示 -->
+    <section class="welcome">
+        <h2>
             ようこそ、
-            <strong th:text="${username}">ユーザー名</strong>
+            <span th:text="${username}">ユーザー名</span>
             さん
-        </p>
-        <p>StockApp が正常に起動しました。</p>
+        </h2>
+    </section>
 
-        <!-- 後で機能を追加する場所 -->
-        <ul>
-            <li>銘柄一覧</li>
-            <li>株価登録</li>
-            <li>分析画面</li>
-        </ul>
-    </div>
+    <!-- サマリー -->
+    <section class="dashboard-summary">
+
+
+
+        <div class="card">
+            <h3>実現損益</h3>
+            <p th:text="${realizedProfit.setScale(0, T(java.math.RoundingMode).DOWN)} + ' 円'">0 円</p>
+        </div>
+
+    </section>
+
+    <!-- クイックメニュー -->
+    <section class="quick-actions">
+
+        <div class="card action">
+            <h3>保有銘柄</h3>
+            <a href="/trades">一覧を見る</a>
+        </div>
+
+        <div class="card action">
+            <h3>新規購入</h3>
+            <a href="/trades/buy/new">登録する</a>
+        </div>
+
+        <div class="card action">
+            <h3>追加購入</h3>
+            <a href="/trades/buy/add">登録する</a>
+        </div>
+
+    </section>
+
 </main>
 
 <footer>
     © 2026 StockApp
 </footer>
-
 </body>
-</html>

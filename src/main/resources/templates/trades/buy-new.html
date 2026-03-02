@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>株を買う</title>
+</head>
+<body>
+<div th:replace="layout/header :: header"></div>
+
+<h1>株の新規購入</h1>
+
+<form th:action="@{/trades/buy/new}" method="post">
+
+    <div>
+        <label>銘柄コード</label>
+        <input type="text" name="stockCode" required>
+    </div>
+
+    <div>
+        <label>銘柄名</label>
+        <input type="text" name="stockName" required>
+    </div>
+
+    <div>
+        <label>数量</label>
+        <input type="number" name="quantity" required>
+    </div>
+
+    <div>
+        <label>価格</label>
+        <input type="number" name="price" step="1" required>
+    </div>
+
+    <div>
+        <label>取引日</label>
+        <input type="date" name="tradeDate" required>
+    </div>
+
+    <button type="submit">購入</button>
+
+</form>
+
+<p>
+    <a href="/trades">一覧に戻る</a>
+</p>
+
+</body>
+</html>

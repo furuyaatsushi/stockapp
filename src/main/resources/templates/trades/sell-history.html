@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>売却損益</title>
+</head>
+<body>
+<div th:replace="layout/header :: header"></div>
+
+<h1>売却損益</h1>
+
+<span>
+    累計損益:
+    <span th:text="${totalProfit}" th:style="${totalProfit != null and totalProfit > 0} ? 'color:blue' :
+                      (${totalProfit != null and totalProfit < 0} ? 'color:red' : '')"></span>
+</span>
+
+<table border="1">
+    <tr>
+        <th>銘柄</th>
+        <th>売却日</th>
+        <th>数量</th>
+        <th>売却単価</th>
+        <th>実現損益</th>
+    </tr>
+
+    <tr th:each="trade : ${sellTrades}">
+        <td th:text="${trade.stock.stockName}"></td>
+        <td th:text="${trade.tradeDate}"></td>
+        <td th:text="${trade.quantity}"></td>
+        <td th:text="${trade.price}"></td>
+        <td th:text="${trade.realizedProfit}" 
+        th:style="${trade.realizedProfit != null and trade.realizedProfit > 0} ? 'color:blue' :
+                      (${trade.realizedProfit != null and trade.realizedProfit < 0} ? 'color:red' : '')">></td>
+    </tr>
+</table>

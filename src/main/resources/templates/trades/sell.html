@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>売却</title>
+</head>
+<body>
+<div th:replace="layout/header :: header"></div>
+
+<h2>株式売却</h2>
+
+<div th:if="${errorMessage}" style="color:red">
+    <p th:text="${errorMessage}"></p>
+</div>
+
+<form th:action="@{/trades/sell}" 
+      th:object="${sellRequest}" 
+      method="post">
+
+    <div>
+        <label>銘柄</label>
+        <select th:field="*{stockId}">
+            <option th:each="stock : ${stocks}"
+                    th:value="${stock.stockId}"
+                    th:text="${stock.stockCode + ' ' + stock.stockName
+                              + ' (保有:' + stock.quantity + ')'}">
+            </option>
+        </select>
+    </div>
+
+    <div>
+        <label>売却価格</label>
+        <input type="number"
+               step="1"
+                th:field="*{price}"
+                required />
+    </div>
+
+    <div>
+        <label>数量</label>
+        <input type="number" th:field="*{quantity}" required />
+    </div>
+
+    <div>
+        <label>売却日</label>
+        <input type="date" th:field="*{tradeDate}" required />
+    </div>
+
+    <button type="submit">売却</button>
+</form>

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>保有株一覧</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div th:replace="layout/header :: header"></div>
+
+<h1>保有株一覧</h1>
+
+<h2>
+    現在保有総額：
+    <span th:text="${totalHoldingAmount}"></span> 円
+</h2>
+
+<table class="stock-table" border="1">
+    <tr>
+        <th>銘柄コード</th>
+        <th>銘柄名</th>
+        <th>保有数</th>
+        <th>平均取得価格</th>
+        <th>保有評価額</th>
+    </tr>
+
+    <tr th:each="h : ${holdings}">
+        <td th:text="${h.stockCode}"></td>
+        <td th:text="${h.stockName}"></td>
+        <td th:text="${h.quantity}"></td>
+        <td th:text="${h.averagePrice}"></td>
+        <td th:text="${h.holdingAmount}"></td>
+    </tr>
+</table>
+
+</body>
+</html>

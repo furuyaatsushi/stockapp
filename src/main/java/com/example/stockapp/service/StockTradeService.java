@@ -1,36 +1,45 @@
 package com.example.stockapp.service;
 
-import com.example.stockapp.entity.Stock;
-import com.example.stockapp.entity.StockTrade;
-import com.example.stockapp.entity.User;
-import com.example.stockapp.entity.TradeType;
-import com.example.stockapp.dto.StockHoldingDto;
-import com.example.stockapp.dto.StockTradeDto;
-import com.example.stockapp.repository.StockRepository;
-import com.example.stockapp.repository.StockTradeRepository;
-import jakarta.transaction.Transactional;
-
-import org.springframework.stereotype.Service;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.*;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+
+import com.example.stockapp.dto.AddBuyRequest;
+import com.example.stockapp.dto.NewBuyRequest;
+import com.example.stockapp.dto.SellRequest;
+import com.example.stockapp.dto.StockHoldingDto;
+import com.example.stockapp.dto.StockTradeDto;
+import com.example.stockapp.entity.Stock;
+import com.example.stockapp.entity.StockTrade;
+import com.example.stockapp.entity.TradeType;
+import com.example.stockapp.entity.User;
+import com.example.stockapp.repository.StockRepository;
+import com.example.stockapp.repository.StockTradeRepository;
+import com.example.stockapp.repository.UserRepository;
+
+import jakarta.transaction.Transactional;
 
 @Service
 public class StockTradeService {
 
     private final StockTradeRepository stockTradeRepository;
     private final StockRepository stockRepository;
+    private final UserRepository userRepository;
 
     public StockTradeService(
             StockTradeRepository stockTradeRepository,
-            StockRepository stockRepository) {
+            StockRepository stockRepository,
+            UserRepository userRepository) {
         this.stockTradeRepository = stockTradeRepository;
         this.stockRepository = stockRepository;
+        this.userRepository = userRepository;
     }
 
     public List<StockTrade> getTradesByUser(User user) {
@@ -53,60 +62,89 @@ public class StockTradeService {
     }
 
     public List<StockHoldingDto> getCurrentHoldings(User user) {
-        List<StockTrade> trades = stockTradeRepository.findByUser(user);
 
-        // 銘柄コードごとにまとめる
-        Map<String, List<StockTrade>> byStock =
+        List<StockTrade> trades =
+            stockTradeRepository.findByUserOrderByTradeDateAsc(user);
+
+        Map<Long, List<StockTrade>> byStock =
             trades.stream()
-                    .collect(Collectors.groupingBy(
-                            t -> t.getStock().getStockCode()
-                    ));
+                .collect(Collectors.groupingBy(
+                    t -> t.getStock().getId()
+                ));
 
         List<StockHoldingDto> result = new ArrayList<>();
 
         for (List<StockTrade> stockTrades : byStock.values()) {
 
-            String stockCode = stockTrades.get(0).getStock().getStockCode();
-            String stockName = stockTrades.get(0).getStock().getStockName();
+            Stock stock = stockTrades.get(0).getStock();
 
-            int totalQuantity = 0;
+            int currentQuantity = 0;
+            int totalBuyQuantity = 0;
+
             BigDecimal totalBuyAmount = BigDecimal.ZERO;
+            BigDecimal totalSellAmount = BigDecimal.ZERO;
+            BigDecimal realizedProfit = BigDecimal.ZERO;
 
             for (StockTrade trade : stockTrades) {
+
+                BigDecimal amount =
+                    trade.getPrice()
+                        .multiply(BigDecimal.valueOf(trade.getQuantity()));
+
                 if (trade.getTradeType() == TradeType.BUY) {
-                    totalQuantity += trade.getQuantity();
-                    totalBuyAmount = totalBuyAmount.add(
-                            trade.getPrice()
-                                    .multiply(BigDecimal.valueOf(trade.getQuantity()))
-                    );
-                } else if (trade.getTradeType() == TradeType.SELL) {
-                        totalQuantity -= trade.getQuantity();
+
+                    currentQuantity += trade.getQuantity();
+                    totalBuyQuantity += trade.getQuantity();
+                    totalBuyAmount = totalBuyAmount.add(amount);
+
+                } else {
+
+                    currentQuantity -= trade.getQuantity();
+                    totalSellAmount = totalSellAmount.add(amount);
+
+                    if (trade.getRealizedProfit() != null) {
+                        realizedProfit =
+                            realizedProfit.add(trade.getRealizedProfit());
+                    }
                 }
             }
 
-            // 売り切っている銘柄は除外
-            if (totalQuantity <= 0) {
+            if (currentQuantity <= 0) {
                 continue;
             }
 
             BigDecimal averagePrice =
-                    totalBuyAmount.divide(
-                            BigDecimal.valueOf(totalQuantity),
-                            2,
-                            RoundingMode.HALF_UP
-                    );
+                totalBuyAmount.divide(
+                    BigDecimal.valueOf(totalBuyQuantity),
+                    0,
+                    RoundingMode.DOWN
+                );
+            
+            BigDecimal holdingAmount =
+                averagePrice.multiply(BigDecimal.valueOf(currentQuantity));
 
             result.add(new StockHoldingDto(
-                    stockCode,
-                    stockName,
-                    totalQuantity,
-                    averagePrice
+                stock.getId(),
+                stock.getStockCode(),
+                stock.getStockName(),
+                currentQuantity,
+                averagePrice,
+                totalBuyAmount,
+                holdingAmount
             ));
-
         }
 
         return result;
     }
+
+    public List<StockHoldingDto> getCurrentHoldingsByUsername(String username) {
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return getCurrentHoldings(user);
+    }
+ 
 
     @Transactional
     public void buyStock(
@@ -140,67 +178,159 @@ public class StockTradeService {
     }
 
     @Transactional
-    public void sellStock(
-            User user,
-            String stockCode,
-            int quantity,
-            BigDecimal price,
-            LocalDate tradeDate) {
+    public void buyNewStock(User user, NewBuyRequest request) {
 
-        Stock stock = stockRepository
-                .findByStockCode(stockCode)
-                .orElseThrow(() ->
-                        new IllegalArgumentException("銘柄が存在しません"));
+        // ① 重複チェック
+        stockRepository.findByUserAndStockCode(user, request.getStockCode())
+                .ifPresent(s -> {
+                    throw new IllegalStateException("既に保有している銘柄です");
+                });
 
-        BigDecimal avgPrice = calculateAveragePrice(user, stockCode);
+        // ② Stock作成
+        Stock stock = new Stock();
+        stock.setUser(user);
+        stock.setStockCode(request.getStockCode());
+        stock.setStockName(request.getStockName());
 
-        BigDecimal realizedProfit =
-                price.subtract(avgPrice)
-                        .multiply(BigDecimal.valueOf(quantity));
+        stockRepository.save(stock);
 
+        // ③ 取引履歴作成
         StockTrade trade = new StockTrade();
-        trade.setUser(user);
         trade.setStock(stock);
-        trade.setTradeType(TradeType.SELL);
-        trade.setQuantity(quantity);
-        trade.setPrice(price);
-        trade.setTradeDate(tradeDate);
-        trade.setRealizedProfit(realizedProfit);
+        trade.setUser(user);
+        trade.setQuantity(request.getQuantity());
+        trade.setPrice(request.getPrice());
+        trade.setTradeDate(request.getTradeDate());
+        trade.setTradeType(TradeType.BUY);
 
         stockTradeRepository.save(trade);
     }
 
+    @Transactional
+    public void buyAdditionalStock(User user, AddBuyRequest request) {
+ 
+        Stock stock = stockRepository.findById(request.getStockId())
+                .orElseThrow(() -> new IllegalArgumentException("銘柄が存在しません"));
 
-    public BigDecimal calculateAveragePrice(
-            User user,
-            String stockCode) {
-
-        List<StockTrade> trades =
-                stockTradeRepository.findByUserAndStock_StockCode(user, stockCode);
-
-        int totalQty = 0;
-        BigDecimal totalAmount = BigDecimal.ZERO;
-
-        for (StockTrade trade : trades) {
-            if (trade.getTradeType() == TradeType.BUY) {
-                totalQty += trade.getQuantity();
-                totalAmount = totalAmount.add(
-                        trade.getPrice().multiply(BigDecimal.valueOf(trade.getQuantity()))
-                );
-            } else if (trade.getTradeType() == TradeType.SELL) {
-                totalQty -= trade.getQuantity();
-            }
+        // 所有者チェック
+        if (!stock.getUser().getId().equals(user.getId())) {
+            throw new IllegalStateException("不正なアクセスです");
         }
 
-        if (totalQty <= 0) {
-            throw new IllegalStateException("保有数量がありません");
+        StockTrade trade = new StockTrade();
+        trade.setStock(stock);
+        trade.setUser(user);
+        trade.setQuantity(request.getQuantity());
+        trade.setPrice(request.getPrice());
+        trade.setTradeDate(request.getTradeDate());
+        trade.setTradeType(TradeType.BUY);
+
+        stockTradeRepository.save(trade);
+    }
+
+    public void sellStock(User user, SellRequest request) {
+
+        // ① 入力バリデーション
+        if (request.getQuantity() <= 0) {
+            throw new IllegalArgumentException("数量は1以上で入力してください");
         }
 
-        return totalAmount.divide(
-                BigDecimal.valueOf(totalQty),
-                2,
-                RoundingMode.HALF_UP
+        if (request.getTradeDate() == null) {
+            throw new IllegalArgumentException("売却日を入力してください");
+        }
+
+        if (request.getPrice() == null || 
+            request.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("価格は正の値を入力してください");
+        }
+
+        // ② 銘柄取得（必ず user 境界をかける）
+        Stock stock = stockRepository
+                .findByIdAndUser_Id(request.getStockId(), user.getId())
+                .orElseThrow(() -> 
+                        new IllegalArgumentException("銘柄が存在しません"));
+
+        // ③ 現在保有数量を計算
+        Integer currentQuantity =
+                stockTradeRepository.calculateHoldingQuantity(user, stock);
+
+        if (currentQuantity == null) {
+            currentQuantity = 0;
+        }
+
+        // ④ 保有数量超過チェック
+        if (request.getQuantity() > currentQuantity) {
+            throw new IllegalArgumentException(
+                    "保有数量を超えて売却できません（現在：" 
+                    + currentQuantity + "株）");
+        }
+
+        // ① 平均取得単価を取得
+        BigDecimal averagePrice =
+                calculateAveragePriceForSell(user, stock.getStockCode());
+
+        // ② 実現損益を計算
+        BigDecimal profit =
+                request.getPrice()
+                        .subtract(averagePrice)
+                        .multiply(BigDecimal.valueOf(request.getQuantity()));
+
+        // ⑤ SELL履歴を追加（数量は正で保存）
+        StockTrade trade = new StockTrade();
+        trade.setStock(stock);
+        trade.setUser(user);
+        trade.setQuantity(request.getQuantity());
+        trade.setPrice(request.getPrice());
+        trade.setTradeDate(request.getTradeDate());
+        trade.setTradeType(TradeType.SELL);
+        trade.setRealizedProfit(profit);
+
+        stockTradeRepository.save(trade);
+    }
+
+    public List<StockTrade> getSellTrades(User user) {
+    return stockTradeRepository
+            .findByUserAndTradeType(user, TradeType.SELL);
+    }
+
+    public BigDecimal calculateAveragePriceForSell(
+        User user,
+        String stockCode) {
+
+    List<StockTrade> trades =
+            stockTradeRepository.findByUserAndStock_StockCode(user, stockCode);
+
+    int totalBuyQuantity = 0;
+    BigDecimal totalBuyAmount = BigDecimal.ZERO;
+
+    for (StockTrade trade : trades) {
+        if (trade.getTradeType() == TradeType.BUY) {
+            totalBuyQuantity += trade.getQuantity();
+            totalBuyAmount = totalBuyAmount.add(
+                    trade.getPrice()
+                            .multiply(BigDecimal.valueOf(trade.getQuantity()))
+            );
+        }
+    }
+
+    if (totalBuyQuantity == 0) {
+        throw new IllegalStateException("購入履歴がありません");
+    }
+
+    return totalBuyAmount.divide(
+            BigDecimal.valueOf(totalBuyQuantity),
+            2,
+            RoundingMode.HALF_UP
         );
+    }
+
+    public List<StockTrade> getAllTrades(User user) {
+        return stockTradeRepository
+            .findByUserOrderByTradeDateDesc(user);
+    }
+
+    public BigDecimal getTotalRealizedProfit(User user) {
+        return stockTradeRepository.sumRealizedProfitByUser(user);
     }
 
 }
