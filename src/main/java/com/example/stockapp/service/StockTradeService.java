@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import com.example.stockapp.entity.*;
 import org.springframework.stereotype.Service;
 
 import com.example.stockapp.dto.AddBuyRequest;
@@ -16,10 +17,6 @@ import com.example.stockapp.dto.NewBuyRequest;
 import com.example.stockapp.dto.SellRequest;
 import com.example.stockapp.dto.StockHoldingDto;
 import com.example.stockapp.dto.StockTradeDto;
-import com.example.stockapp.entity.Stock;
-import com.example.stockapp.entity.StockTrade;
-import com.example.stockapp.entity.TradeType;
-import com.example.stockapp.entity.User;
 import com.example.stockapp.repository.StockRepository;
 import com.example.stockapp.repository.StockTradeRepository;
 import com.example.stockapp.repository.UserRepository;
@@ -66,16 +63,17 @@ public class StockTradeService {
         List<StockTrade> trades =
             stockTradeRepository.findByUserOrderByTradeDateAsc(user);
 
-        Map<Long, List<StockTrade>> byStock =
-            trades.stream()
-                .collect(Collectors.groupingBy(
-                    t -> t.getStock().getId()
-                ));
+        Map<String, List<StockTrade>> byStockAccount =
+                trades.stream()
+                        .collect(Collectors.groupingBy(
+                                t -> t.getStock().getId() + "_" + t.getAccountType()
+                        ));
 
         List<StockHoldingDto> result = new ArrayList<>();
 
-        for (List<StockTrade> stockTrades : byStock.values()) {
+        for (List<StockTrade> stockTrades : byStockAccount.values()) {
 
+            AccountType accountType = stockTrades.get(0).getAccountType();
             Stock stock = stockTrades.get(0).getStock();
 
             int currentQuantity = 0;
@@ -130,7 +128,8 @@ public class StockTradeService {
                 currentQuantity,
                 averagePrice,
                 totalBuyAmount,
-                holdingAmount
+                holdingAmount,
+                accountType
             ));
         }
 
@@ -180,26 +179,36 @@ public class StockTradeService {
     @Transactional
     public void buyNewStock(User user, NewBuyRequest request) {
 
-        // ① 重複チェック
-        stockRepository.findByUserAndStockCode(user, request.getStockCode())
-                .ifPresent(s -> {
-                    throw new IllegalStateException("既に保有している銘柄です");
+        Stock stock = stockRepository
+                .findByUserAndStockCode(user, request.getStockCode())
+                .map(existingStock -> {
+
+                    // 名前チェック
+                    if (!existingStock.getStockName().equals(request.getStockName())) {
+                        throw new IllegalArgumentException("銘柄コードに対して銘柄名が一致しません");
+                    }
+
+                    return existingStock;
+
+                })
+                .orElseGet(() -> {
+
+                    // 新規銘柄作成
+                    Stock newStock = new Stock();
+                    newStock.setUser(user);
+                    newStock.setStockCode(request.getStockCode());
+                    newStock.setStockName(request.getStockName());
+                    return stockRepository.save(newStock);
+
                 });
 
-        // ② Stock作成
-        Stock stock = new Stock();
-        stock.setUser(user);
-        stock.setStockCode(request.getStockCode());
-        stock.setStockName(request.getStockName());
-
-        stockRepository.save(stock);
-
-        // ③ 取引履歴作成
+        // 取引作成
         StockTrade trade = new StockTrade();
         trade.setStock(stock);
         trade.setUser(user);
         trade.setQuantity(request.getQuantity());
         trade.setPrice(request.getPrice());
+        trade.setAccountType(request.getAccountType());
         trade.setTradeDate(request.getTradeDate());
         trade.setTradeType(TradeType.BUY);
 
@@ -222,6 +231,7 @@ public class StockTradeService {
         trade.setUser(user);
         trade.setQuantity(request.getQuantity());
         trade.setPrice(request.getPrice());
+        trade.setAccountType(request.getAccountType());
         trade.setTradeDate(request.getTradeDate());
         trade.setTradeType(TradeType.BUY);
 
@@ -252,7 +262,11 @@ public class StockTradeService {
 
         // ③ 現在保有数量を計算
         Integer currentQuantity =
-                stockTradeRepository.calculateHoldingQuantity(user, stock);
+                stockTradeRepository.calculateHoldingQuantity(
+                        user,
+                        stock,
+                        request.getAccountType()
+                );
 
         if (currentQuantity == null) {
             currentQuantity = 0;
@@ -265,10 +279,20 @@ public class StockTradeService {
                     + currentQuantity + "株）");
         }
 
+        AccountType accountType =
+                stockTradeRepository
+                        .findTopByUserAndStockOrderByTradeDateAsc(user, stock)
+                        .orElseThrow(() ->
+                                new IllegalArgumentException("取引履歴が存在しません"))
+                        .getAccountType();
+
         // ① 平均取得単価を取得
         BigDecimal averagePrice =
-                calculateAveragePriceForSell(user, stock.getStockCode());
-
+                calculateAveragePriceForSell(
+                        user,
+                        stock.getStockCode(),
+                        accountType
+                );
         // ② 実現損益を計算
         BigDecimal profit =
                 request.getPrice()
@@ -284,6 +308,7 @@ public class StockTradeService {
         trade.setTradeDate(request.getTradeDate());
         trade.setTradeType(TradeType.SELL);
         trade.setRealizedProfit(profit);
+        trade.setAccountType(request.getAccountType());
 
         stockTradeRepository.save(trade);
     }
@@ -294,11 +319,17 @@ public class StockTradeService {
     }
 
     public BigDecimal calculateAveragePriceForSell(
-        User user,
-        String stockCode) {
+            User user,
+            String stockCode,
+            AccountType accountType) {
 
-    List<StockTrade> trades =
-            stockTradeRepository.findByUserAndStock_StockCode(user, stockCode);
+        List<StockTrade> trades =
+                stockTradeRepository
+                        .findByUserAndStock_StockCodeAndAccountTypeOrderByTradeDateAsc(
+                                user,
+                                stockCode,
+                                accountType
+                        );
 
     int totalBuyQuantity = 0;
     BigDecimal totalBuyAmount = BigDecimal.ZERO;

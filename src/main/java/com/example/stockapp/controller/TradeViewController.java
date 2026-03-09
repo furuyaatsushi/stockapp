@@ -3,13 +3,14 @@ package com.example.stockapp.controller;
 import java.util.List;
 import java.math.BigDecimal;
 
+import com.example.stockapp.entity.AccountType;
+import com.example.stockapp.entity.Stock;
+import com.example.stockapp.repository.StockRepository;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.*;
 
 import com.example.stockapp.dto.AddBuyRequest;
 import com.example.stockapp.dto.NewBuyRequest;
@@ -24,12 +25,15 @@ public class TradeViewController {
 
     private final StockTradeService stockTradeService;
     private final UserRepository userRepository;
+    private final StockRepository stockRepository;
 
     public TradeViewController(
             StockTradeService stockTradeService,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            StockRepository stockRepository) {
         this.stockTradeService = stockTradeService;
         this.userRepository = userRepository;
+        this.stockRepository = stockRepository;
     }
 
     @GetMapping("/stocks")
@@ -75,17 +79,28 @@ public class TradeViewController {
         return "redirect:/stocks";
     }
 
-    @GetMapping("/trades/buy/add")
-    public String buyAddForm(
+    @GetMapping("/trades/buy/add/{stockId}/{accountType}")
+    public String showAddBuyForm(
+            @PathVariable Long stockId,
+            @PathVariable AccountType accountType,
             @AuthenticationPrincipal UserDetails userDetails,
-            Model model
-    ) {
+            Model model) {
+
         User user = userRepository
                 .findByUsername(userDetails.getUsername())
                 .orElseThrow();
 
-        model.addAttribute("stocks",
-                stockTradeService.getCurrentHoldings(user));
+        Stock stock = stockRepository
+                .findByIdAndUser_Id(stockId, user.getId())
+                .orElseThrow();
+
+        AddBuyRequest request = new AddBuyRequest();
+        request.setStockId(stockId);
+        request.setAccountType(accountType);
+
+        model.addAttribute("stock", stock);
+        model.addAttribute("accountType", accountType);
+        model.addAttribute("addBuyRequest", request);
 
         return "trades/buy-add";
     }
@@ -93,13 +108,17 @@ public class TradeViewController {
     @PostMapping("/trades/buy/add")
     public String buyAddSubmit(
             @AuthenticationPrincipal UserDetails userDetails,
-            AddBuyRequest request
+            @ModelAttribute AddBuyRequest addBuyRequest
     ) {
+
+        System.out.println("stockId = " + addBuyRequest.getStockId());
+        System.out.println("accountType = " + addBuyRequest.getAccountType());
+
         User user = userRepository
                 .findByUsername(userDetails.getUsername())
                 .orElseThrow();
 
-        stockTradeService.buyAdditionalStock(user, request);
+        stockTradeService.buyAdditionalStock(user, addBuyRequest);
 
         return "redirect:/stocks";
     }
@@ -112,9 +131,10 @@ public class TradeViewController {
                 .findByUsername(userDetails.getUsername())
                 .orElseThrow();
 
-        model.addAttribute("stocks",
-                stockTradeService.getCurrentHoldings(user));
+        List<StockHoldingDto> holdings =
+                stockTradeService.getCurrentHoldings(user);
 
+        model.addAttribute("holdings", holdings);
         model.addAttribute("sellRequest", new SellRequest());
 
         return "trades/sell";
@@ -131,7 +151,7 @@ public class TradeViewController {
 
         try {
                 stockTradeService.sellStock(user, request);
-                return "redirect:/trades";
+                return "redirect:/stocks";
 
         } catch (IllegalArgumentException e) {
 

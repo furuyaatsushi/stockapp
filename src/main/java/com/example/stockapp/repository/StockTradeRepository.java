@@ -2,16 +2,13 @@ package com.example.stockapp.repository;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
+import com.example.stockapp.entity.*;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-
-import com.example.stockapp.entity.Stock;
-import com.example.stockapp.entity.StockTrade;
-import com.example.stockapp.entity.TradeType;
-import com.example.stockapp.entity.User;
 
 @Repository
 public interface StockTradeRepository
@@ -35,20 +32,36 @@ public interface StockTradeRepository
 
     List<StockTrade> findByUserAndTradeType(User user, TradeType tradeType);
 
+    List<StockTrade> findByUserAndStock_StockCodeAndAccountTypeOrderByTradeDateAsc(
+            User user,
+            String stockCode,
+            AccountType accountType
+    );
+
+    Optional<StockTrade> findTopByUserAndStockOrderByTradeDateAsc(
+            User user,
+            Stock stock
+    );
+
     //現在保有数取得
     @Query("""
-        SELECT COALESCE(SUM(
-                CASE 
-                WHEN t.tradeType = 'BUY' THEN t.quantity
-                WHEN t.tradeType = 'SELL' THEN -t.quantity
-                END
-        ), 0)
-        FROM StockTrade t
-        WHERE t.user = :user
-          AND t.stock = :stock
+    SELECT SUM(
+        CASE 
+            WHEN t.tradeType = 'BUY' THEN t.quantity
+            ELSE -t.quantity
+        END
+    )
+    FROM StockTrade t
+    WHERE t.user = :user
+    AND t.stock = :stock
+    AND t.accountType = :accountType
     """)
-    Integer calculateHoldingQuantity(@Param("user") User user,
-                                    @Param("stock") Stock stock);
+
+    Integer calculateHoldingQuantity(
+            @Param("user") User user,
+            @Param("stock") Stock stock,
+            @Param("accountType") AccountType accountType
+    );
 
     @Query("""
         SELECT COALESCE(SUM(s.realizedProfit), 0)

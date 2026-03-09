@@ -13,27 +13,34 @@
     <p th:text="${errorMessage}"></p>
 </div>
 
-<form th:action="@{/trades/sell}" 
-      th:object="${sellRequest}" 
+<form th:action="@{/trades/sell}"
+      th:object="${sellRequest}"
       method="post">
 
     <div>
         <label>銘柄</label>
-        <select th:field="*{stockId}">
-            <option th:each="stock : ${stocks}"
-                    th:value="${stock.stockId}"
-                    th:text="${stock.stockCode + ' ' + stock.stockName
-                              + ' (保有:' + stock.quantity + ')'}">
+
+        <select th:field="*{stockId}" id="stockSelect" required>
+            <option th:each="holding : ${holdings}"
+                    th:value="${holding.stockId}"
+                    th:data-account="${holding.accountType}"
+                    th:text="${holding.stockCode + ' '
+                            + holding.stockName
+                            + ' ('
+                            + (holding.accountType == T(com.example.stockapp.entity.AccountType).NISA ? 'NISA' : '特定')
+                            + ' / 保有:' + holding.quantity + ')'}">
             </option>
         </select>
     </div>
+
+    <input type="hidden" th:field="*{accountType}" id="accountType"/>
 
     <div>
         <label>売却価格</label>
         <input type="number"
                step="1"
-                th:field="*{price}"
-                required />
+               th:field="*{price}"
+               required />
     </div>
 
     <div>
@@ -47,4 +54,22 @@
     </div>
 
     <button type="submit">売却</button>
+
 </form>
+
+<script>
+
+    const select = document.getElementById("stockSelect");
+    const accountInput = document.getElementById("accountType");
+
+    function updateAccountType() {
+        const selected = select.options[select.selectedIndex];
+        accountInput.value = selected.dataset.account;
+    }
+
+    select.addEventListener("change", updateAccountType);
+
+    // 初期値
+    updateAccountType();
+
+</script>

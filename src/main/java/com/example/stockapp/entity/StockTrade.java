@@ -30,6 +30,8 @@ public class StockTrade {
     @Column(name = "trade_type", nullable = false)
     private TradeType tradeType;
 
+    @Enumerated(EnumType.STRING)
+    private AccountType accountType;
 
     @Column(name = "trade_date", nullable = false)
     private LocalDate tradeDate;
@@ -75,6 +77,14 @@ public class StockTrade {
 
     public TradeType getTradeType() {
         return tradeType;
+    }
+
+    public AccountType getAccountType() {
+        return accountType;
+    }
+
+    public void setAccountType(AccountType accountType) {
+        this.accountType = accountType;
     }
 
     public void setTradeType(TradeType tradeType) {

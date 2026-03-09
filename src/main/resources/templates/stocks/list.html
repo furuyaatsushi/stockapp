@@ -21,6 +21,7 @@
         <th>銘柄名</th>
         <th>保有数</th>
         <th>平均取得価格</th>
+        <th>口座分類</th>
         <th>保有評価額</th>
     </tr>
 
@@ -29,7 +30,14 @@
         <td th:text="${h.stockName}"></td>
         <td th:text="${h.quantity}"></td>
         <td th:text="${h.averagePrice}"></td>
+        <td th:text="${h.accountType.displayName}"></td>
         <td th:text="${h.holdingAmount}"></td>
+        <td>
+            <a th:href="@{/trades/buy/add/{stockId}/{accountType}
+                (stockId=${h.stockId},accountType=${h.accountType})}">
+                追加購入
+            </a>
+        </td>
     </tr>
 </table>
 

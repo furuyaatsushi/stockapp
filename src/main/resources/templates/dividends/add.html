@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>配当登録</title>
+</head>
+<body>
+
+<h2>配当登録</h2>
+
+<form th:action="@{/dividends/add}" th:object="${dividendRequest}" method="post">
+
+    <!-- hidden -->
+    <input type="hidden" th:field="*{stockId}" />
+    <input type="hidden" th:field="*{accountType}" />
+
+    <!-- 銘柄表示 -->
+    <div>
+        <label>銘柄</label>
+        <div>
+            <span th:text="${stock.stockCode}"></span>
+            <span th:text="${stock.stockName}"></span>
+            <span th:text="${accountType == T(com.example.stockapp.entity.AccountType).NISA ? '(NISA)' : '(特定)'}"></span>
+        </div>
+    </div>
+
+    <div>
+        <label>配当額</label>
+        <input type="number"
+               step="1"
+               th:field="*{amount}"
+               required />
+    </div>
+
+    <div>
+        <label>配当日</label>
+        <input type="date"
+               th:field="*{dividendDate}"
+               required />
+    </div>
+
+    <div>
+        <label>メモ</label>
+        <input type="text"
+               th:field="*{memo}" />
+    </div>
+
+    <button type="submit">登録</button>
+
+</form>
+
+</body>
+</html>

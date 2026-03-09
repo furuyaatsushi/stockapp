@@ -1,13 +1,13 @@
 package com.example.stockapp.dto;
 
+import com.example.stockapp.entity.AccountType;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public class AddBuyRequest {
-
     private Long stockId;
-    private String stockCode;
-    private String stockName;
+    private AccountType accountType; // NISA / 特定
     private int quantity;
     private BigDecimal price;
     private LocalDate tradeDate;
@@ -18,22 +18,6 @@ public class AddBuyRequest {
 
     public void setStockId(Long stockId) {
         this.stockId = stockId;
-    }
-
-    public String getStockCode() {
-        return stockCode;
-    }
-
-    public void setStockCode(String stockCode) {
-        this.stockCode = stockCode;
-    }
-
-    public String getStockName() {
-        return stockName;
-    }
-
-    public void setStockName(String stockName) {
-        this.stockName = stockName;
     }
 
     public int getQuantity() {
@@ -60,4 +44,11 @@ public class AddBuyRequest {
         this.tradeDate = tradeDate;
     }
 
+    public AccountType getAccountType() {
+        return accountType;
+    }
+
+    public void setAccountType(AccountType accountType) {
+        this.accountType = accountType;
+    }
 }

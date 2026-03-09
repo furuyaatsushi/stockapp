@@ -1,5 +1,7 @@
 package com.example.stockapp.dto;
 
+import com.example.stockapp.entity.AccountType;
+
 import java.math.BigDecimal;
 
 public class StockHoldingDto {
@@ -11,6 +13,7 @@ public class StockHoldingDto {
     private BigDecimal averagePrice;
     private BigDecimal totalBuyAmount;
     private BigDecimal holdingAmount;
+    private AccountType accountType;
 
     public StockHoldingDto(
             Long stockId,
@@ -19,7 +22,8 @@ public class StockHoldingDto {
             int quantity,
             BigDecimal averagePrice,
             BigDecimal totalBuyAmount,
-            BigDecimal holdingAmount) {
+            BigDecimal holdingAmount,
+            AccountType accountType) {
         this.stockId = stockId;
         this.stockCode = stockCode;
         this.stockName = stockName;
@@ -27,6 +31,7 @@ public class StockHoldingDto {
         this.averagePrice = averagePrice;
         this.totalBuyAmount = totalBuyAmount;
         this.holdingAmount = holdingAmount;
+        this.accountType = accountType;
     }
 
     public Long getStockId() {
@@ -59,5 +64,9 @@ public class StockHoldingDto {
 
     public BigDecimal getHoldingAmount(){
         return holdingAmount;
+    }
+
+    public AccountType getAccountType() {
+        return accountType;
     }
 }

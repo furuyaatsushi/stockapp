@@ -9,39 +9,42 @@
 
 <h1>株の追加購入</h1>
 
-<form th:action="@{/trades/buy/add}" method="post">
+<form th:action="@{/trades/buy/add}"
+      th:object="${addBuyRequest}"
+      method="post">
+
+    <input type="hidden" th:field="*{stockId}" />
+    <input type="hidden" th:field="*{accountType}" />
 
     <div>
-        <label>銘柄コード</label>
-        <select name="stockId" required>
-            <option th:each="stock : ${stocks}"
-                    th:value="${stock.stockId}"
-                    th:text="${stock.stockCode + ' ' + stock.stockName}">
-            </option>
-        </select>
+        <label>銘柄</label>
+        <div>
+            <span th:text="${stock.stockCode}"></span>
+            <span th:text="${stock.stockName}"></span>
+            <span th:text="${accountType}"></span>
+        </div>
     </div>
 
     <div>
         <label>数量</label>
-        <input type="number" name="quantity" required>
+        <input type="number" th:field="*{quantity}" required>
     </div>
 
     <div>
         <label>価格</label>
-        <input type="number" name="price" step="0.01" required>
+        <input type="number" th:field="*{price}" required>
     </div>
 
     <div>
         <label>取引日</label>
-        <input type="date" name="tradeDate" required>
+        <input type="date" th:field="*{tradeDate}" required>
     </div>
 
-    <button type="submit">購入</button>
-
+    <button type="submit">追加購入</button>
 </form>
 
 <p>
-    <a href="/trades">一覧に戻る</a>
+    <a href="/stocks">一覧に戻る</a>
 </p>
 
 </body>

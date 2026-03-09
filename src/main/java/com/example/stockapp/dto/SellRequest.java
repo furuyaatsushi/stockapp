@@ -1,5 +1,7 @@
 package com.example.stockapp.dto;
 
+import com.example.stockapp.entity.AccountType;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
@@ -9,6 +11,7 @@ public class SellRequest {
     private int quantity;
     private BigDecimal price; 
     private LocalDate tradeDate;
+    private AccountType accountType;
 
     public Long getStockId() {
         return stockId;
@@ -40,5 +43,13 @@ public class SellRequest {
 
     public void setTradeDate(LocalDate tradeDate) {
         this.tradeDate = tradeDate;
+    }
+
+    public AccountType getAccountType() {
+        return accountType;
+    }
+
+    public void setAccountType(AccountType accountType) {
+        this.accountType = accountType;
     }
 }
