@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<title>銘柄詳細</title>
+
+<link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+
+<body>
+
+<div th:replace="layout/header :: header"></div>
+
+<div class="container">
+
+<div class="card">
+
+<div class="stock-header">
+<div>
+<h1 th:text="${stock.stockName}"></h1>
+<div class="stock-code" th:text="${stock.stockCode}"></div>
+</div>
+</div>
+
+</div>
+
+<div class="card">
+
+<h2>保有情報</h2>
+
+<div class="info-grid">
+
+<div class="label">口座</div>
+<div th:text="${holding.accountType}"></div>
+
+<div class="label">保有株数</div>
+<div th:text="${holding.quantity} + ' 株'"></div>
+
+<div class="label">平均取得単価</div>
+<div th:text="${holding.averagePrice} + ' 円'"></div>
+
+<div class="label">投資額</div>
+<div th:text="${holding.totalBuyAmount} + ' 円'"></div>
+
+</div>
+
+<div class="button-group">
+
+<a class="btn btn-buy"
+   th:href="@{/trades/buy/add/{id}/{accountType}(id=${stock.id},accountType=${holding.accountType})}">
+買い増し
+</a>
+
+<a class="btn btn-dividend"
+   th:href="@{/dividends/add/{id}/{accountType}(id=${stock.id},accountType=${holding.accountType})}">
+配当登録
+</a>
+
+</div>
+
+</div>
+
+<div class="card">
+
+<h2>配当履歴</h2>
+
+<table>
+
+<thead>
+<tr>
+<th>配当日</th>
+<th>金額</th>
+<th>メモ</th>
+</tr>
+</thead>
+
+<tbody>
+
+<tr th:each="d : ${dividends}">
+<td th:text="${d.dividendDate}"></td>
+<td th:text="${d.amount} + ' 円'"></td>
+<td th:text="${d.memo}"></td>
+</tr>
+
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+</body>
+</html>

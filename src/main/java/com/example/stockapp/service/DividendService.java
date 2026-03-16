@@ -1,10 +1,13 @@
 package com.example.stockapp.service;
 
-import com.example.stockapp.dto.DividendRequest;
-import com.example.stockapp.entity.*;
-import com.example.stockapp.repository.*;
-
 import org.springframework.stereotype.Service;
+
+import com.example.stockapp.dto.DividendRequest;
+import com.example.stockapp.entity.Dividend;
+import com.example.stockapp.entity.Stock;
+import com.example.stockapp.entity.User;
+import com.example.stockapp.repository.DividendRepository;
+import com.example.stockapp.repository.StockRepository;
 
 @Service
 public class DividendService {

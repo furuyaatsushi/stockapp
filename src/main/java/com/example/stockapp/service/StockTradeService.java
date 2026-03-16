@@ -6,10 +6,8 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
-import com.example.stockapp.entity.*;
 import org.springframework.stereotype.Service;
 
 import com.example.stockapp.dto.AddBuyRequest;
@@ -17,6 +15,11 @@ import com.example.stockapp.dto.NewBuyRequest;
 import com.example.stockapp.dto.SellRequest;
 import com.example.stockapp.dto.StockHoldingDto;
 import com.example.stockapp.dto.StockTradeDto;
+import com.example.stockapp.entity.AccountType;
+import com.example.stockapp.entity.Stock;
+import com.example.stockapp.entity.StockTrade;
+import com.example.stockapp.entity.TradeType;
+import com.example.stockapp.entity.User;
 import com.example.stockapp.repository.StockRepository;
 import com.example.stockapp.repository.StockTradeRepository;
 import com.example.stockapp.repository.UserRepository;
@@ -362,6 +365,66 @@ public class StockTradeService {
 
     public BigDecimal getTotalRealizedProfit(User user) {
         return stockTradeRepository.sumRealizedProfitByUser(user);
+    }
+
+
+
+    public StockHoldingDto getStockHolding(Long stockId) {
+
+    Stock stock = stockRepository.findById(stockId)
+            .orElseThrow();
+
+    List<StockTrade> trades =
+            stockTradeRepository.findByStockId(stockId);
+
+    int quantity = 0;
+    BigDecimal totalBuy = BigDecimal.ZERO;
+
+    for (StockTrade t : trades) {
+
+        if (t.getTradeType() == TradeType.BUY) {
+
+            quantity += t.getQuantity();
+
+            totalBuy = totalBuy.add(
+                    t.getPrice().multiply(
+                            BigDecimal.valueOf(t.getQuantity())
+                    )
+            );
+        }
+
+        if (t.getTradeType() == TradeType.SELL) {
+
+            quantity -= t.getQuantity();
+        }
+    }
+
+    BigDecimal avgPrice = BigDecimal.ZERO;
+
+    if (quantity > 0) {
+        avgPrice = totalBuy.divide(
+                BigDecimal.valueOf(quantity),
+                0,
+                RoundingMode.HALF_UP
+        );
+    }
+
+    StockHoldingDto dto = new StockHoldingDto();
+
+        dto.setStockId(stock.getId());
+        dto.setStockCode(stock.getStockCode());
+        dto.setStockName(stock.getStockName());
+
+        dto.setQuantity(quantity);
+        dto.setAveragePrice(avgPrice);
+
+        dto.setTotalBuyAmount(totalBuy);
+
+        dto.setHoldingAmount(
+                avgPrice.multiply(BigDecimal.valueOf(quantity))
+        );
+
+        return dto;
     }
 
 }

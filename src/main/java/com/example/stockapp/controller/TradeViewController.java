@@ -1,22 +1,27 @@
 package com.example.stockapp.controller;
 
-import java.util.List;
 import java.math.BigDecimal;
+import java.util.List;
 
-import com.example.stockapp.entity.AccountType;
-import com.example.stockapp.entity.Stock;
-import com.example.stockapp.repository.StockRepository;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 
 import com.example.stockapp.dto.AddBuyRequest;
 import com.example.stockapp.dto.NewBuyRequest;
 import com.example.stockapp.dto.SellRequest;
 import com.example.stockapp.dto.StockHoldingDto;
+import com.example.stockapp.entity.AccountType;
+import com.example.stockapp.entity.Dividend;
+import com.example.stockapp.entity.Stock;
 import com.example.stockapp.entity.User;
+import com.example.stockapp.repository.DividendRepository;
+import com.example.stockapp.repository.StockRepository;
 import com.example.stockapp.repository.UserRepository;
 import com.example.stockapp.service.StockTradeService;
 
@@ -26,14 +31,17 @@ public class TradeViewController {
     private final StockTradeService stockTradeService;
     private final UserRepository userRepository;
     private final StockRepository stockRepository;
+    private final DividendRepository dividendRepository;
 
     public TradeViewController(
             StockTradeService stockTradeService,
             UserRepository userRepository,
-            StockRepository stockRepository) {
+            StockRepository stockRepository,
+            DividendRepository dividendRepository) {
         this.stockTradeService = stockTradeService;
         this.userRepository = userRepository;
         this.stockRepository = stockRepository;
+        this.dividendRepository = dividendRepository;
     }
 
     @GetMapping("/stocks")
@@ -194,4 +202,21 @@ public class TradeViewController {
         return "trades/history";
     }
 
+    @GetMapping("/stocks/{id}")
+    public String stockDetail(@PathVariable Long id, Model model) {
+
+        Stock stock = stockRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("銘柄が見つかりません"));
+
+        StockHoldingDto holding = stockTradeService.getStockHolding(stock.getId());
+
+        List<Dividend> dividends =
+                dividendRepository.findByStockIdOrderByDividendDateDesc(id);
+
+        model.addAttribute("stock", stock);
+        model.addAttribute("holding", holding);
+        model.addAttribute("dividends", dividends);
+
+        return "stocks/detail";
+    }
 }

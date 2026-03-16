@@ -15,6 +15,8 @@ public class DividendRequest {
 
     private LocalDate dividendDate;
 
+    private String memo;
+
     // getter setter
 
     public Long getStockId() {
@@ -47,5 +49,13 @@ public class DividendRequest {
 
     public void setDividendDate(LocalDate dividendDate) {
         this.dividendDate = dividendDate;
+    }
+
+    public String getMemo() {
+        return memo;
+    }
+
+    public void setMemo(String memo) {
+        this.memo = memo;
     }
 }

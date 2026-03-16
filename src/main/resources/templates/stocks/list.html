@@ -1,45 +1,77 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
+
 <head>
-    <meta charset="UTF-8">
-    <title>保有株一覧</title>
-    <link rel="stylesheet" th:href="@{/css/style.css}">
+<meta charset="UTF-8">
+<title>保有銘柄一覧</title>
+
+<link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
+
 <body>
+
 <div th:replace="layout/header :: header"></div>
 
-<h1>保有株一覧</h1>
+<div class="container">
 
-<h2>
-    現在保有総額：
-    <span th:text="${totalHoldingAmount}"></span> 円
-</h2>
+<h1 class="page-title">保有銘柄一覧</h1>
 
-<table class="stock-table" border="1">
-    <tr>
-        <th>銘柄コード</th>
-        <th>銘柄名</th>
-        <th>保有数</th>
-        <th>平均取得価格</th>
-        <th>口座分類</th>
-        <th>保有評価額</th>
-    </tr>
+<div class="card">
 
-    <tr th:each="h : ${holdings}">
-        <td th:text="${h.stockCode}"></td>
-        <td th:text="${h.stockName}"></td>
-        <td th:text="${h.quantity}"></td>
-        <td th:text="${h.averagePrice}"></td>
-        <td th:text="${h.accountType.displayName}"></td>
-        <td th:text="${h.holdingAmount}"></td>
-        <td>
-            <a th:href="@{/trades/buy/add/{stockId}/{accountType}
-                (stockId=${h.stockId},accountType=${h.accountType})}">
-                追加購入
-            </a>
-        </td>
-    </tr>
+<div class="info-grid info-total">
+
+<div class="label total-label">保有評価額</div>
+<div class="total" th:text="${totalHoldingAmount} + ' 円'"></div>
+
+</div>
+
+</div>
+
+<div class="card">
+
+<table class="stock-table">
+
+<thead>
+<tr>
+<th>銘柄</th>
+<th class="right">株数</th>
+<th class="right">平均取得</th>
+<th class="right">投資額</th>
+<th class="right">評価額</th>
+<th>口座</th>
+</tr>
+</thead>
+
+<tbody>
+
+<tr th:each="h : ${holdings}">
+
+<td>
+<a th:href="@{/stocks/{id}(id=${h.stockId})}">
+<span th:text="${h.stockCode}"></span>
+<span th:text="${h.stockName}"></span>
+</a>
+</td>
+
+<td class="right" th:text="${h.quantity} + '株'"></td>
+
+<td class="right" th:text="${h.averagePrice} + '円'"></td>
+
+<td class="right" th:text="${h.totalBuyAmount} + '円'"></td>
+
+<td class="right" th:text="${h.holdingAmount} + '円'"></td>
+
+<td th:text="${h.accountType}"></td>
+
+</tr>
+
+</tbody>
+
 </table>
+
+</div>
+
+</div>
 
 </body>
 </html>

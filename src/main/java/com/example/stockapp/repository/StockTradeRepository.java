@@ -4,11 +4,16 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
-import com.example.stockapp.entity.*;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
+import com.example.stockapp.entity.AccountType;
+import com.example.stockapp.entity.Stock;
+import com.example.stockapp.entity.StockTrade;
+import com.example.stockapp.entity.TradeType;
+import com.example.stockapp.entity.User;
 
 @Repository
 public interface StockTradeRepository
@@ -18,6 +23,8 @@ public interface StockTradeRepository
     List<StockTrade> findByUser_Id(Long userId);
 
     List<StockTrade> findByUser(User user);
+
+    List<StockTrade> findByStockId(Long stockId);
 
     // ユーザー + 銘柄ごとの取引
     List<StockTrade> findByUser_IdAndStock_Id(Long userId, Long stockId);
