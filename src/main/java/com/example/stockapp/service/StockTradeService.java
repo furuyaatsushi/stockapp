@@ -427,5 +427,48 @@ public class StockTradeService {
         return dto;
     }
 
+    public List<StockHoldingDto> getHoldingsByStock(User user, Long stockId) {
+
+        List<StockTrade> trades =
+                stockTradeRepository.findByUserAndStockId(user, stockId);
+
+        Map<AccountType, List<StockTrade>> grouped =
+                trades.stream().collect(Collectors.groupingBy(StockTrade::getAccountType));
+
+        List<StockHoldingDto> result = new ArrayList<>();
+
+        for (Map.Entry<AccountType, List<StockTrade>> entry : grouped.entrySet()) {
+
+            AccountType accountType = entry.getKey();
+            List<StockTrade> list = entry.getValue();
+
+            int quantity = list.stream().mapToInt(StockTrade::getQuantity).sum();
+
+            BigDecimal totalBuy = list.stream()
+                    .map(t -> t.getPrice().multiply(BigDecimal.valueOf(t.getQuantity())))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            BigDecimal avgPrice = quantity == 0
+                    ? BigDecimal.ZERO
+                    : totalBuy.divide(BigDecimal.valueOf(quantity), 2, RoundingMode.HALF_UP);
+
+            Stock stock = list.get(0).getStock();
+
+            StockHoldingDto dto = new StockHoldingDto();
+            dto.setStockId(stock.getId());
+            dto.setStockCode(stock.getStockCode());
+            dto.setStockName(stock.getStockName());
+            dto.setQuantity(quantity);
+            dto.setAveragePrice(avgPrice);
+            dto.setTotalBuyAmount(totalBuy);
+            dto.setHoldingAmount(avgPrice.multiply(BigDecimal.valueOf(quantity)));
+            dto.setAccountType(accountType);
+
+            result.add(dto);
+        }
+
+        return result;
+    }
+
 }
 

@@ -1,92 +1,124 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head>
-<meta charset="UTF-8">
-<title>銘柄詳細</title>
 
-<link rel="stylesheet" th:href="@{/css/style.css}">
+<head>
+    <meta charset="UTF-8">
+    <title>銘柄詳細</title>
+
+    <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 
 <body>
-
-<div th:replace="layout/header :: header"></div>
-
+<div th:replace="~{layout/header :: header}"></div>
 <div class="container">
 
-<div class="card">
+    <!-- ================= -->
+    <!-- 銘柄情報 -->
+    <!-- ================= -->
+    <div class="section header">
+        <h1>
+            <span th:text="${stock.stockCode}"></span>
+            <span th:text="${stock.stockName}"></span>
+        </h1>
+    </div>
 
-<div class="stock-header">
-<div>
-<h1 th:text="${stock.stockName}"></h1>
-<div class="stock-code" th:text="${stock.stockCode}"></div>
-</div>
-</div>
+    <!-- ================= -->
+    <!-- 保有情報 -->
+    <!-- ================= -->
+    <div class="section">
 
-</div>
+        <h2>保有情報</h2>
 
-<div class="card">
+        <div th:if="${#lists.isEmpty(holdings)}">
+            <p>保有データがありません</p>
+        </div>
 
-<h2>保有情報</h2>
+        <div class="account-container">
 
-<div class="info-grid">
+            <div th:each="h : ${holdings}"
+                 th:class="'account-card ' + (${h.accountType.name()} == 'NISA' ? 'nisa' : 'taxable')">
 
-<div class="label">口座</div>
-<div th:text="${holding.accountType}"></div>
+                <div class="account-title">
+                    <span th:text="${h.accountType}"></span>
+                </div>
 
-<div class="label">保有株数</div>
-<div th:text="${holding.quantity} + ' 株'"></div>
+                <div class="info-row">
+                    <span>株数</span>
+                    <span th:text="${h.quantity} + ' 株'"></span>
+                </div>
 
-<div class="label">平均取得単価</div>
-<div th:text="${holding.averagePrice} + ' 円'"></div>
+                <div class="info-row">
+                    <span>平均取得</span>
+                    <span>¥<span th:text="${#numbers.formatInteger(h.averagePrice, 0, 'COMMA')}"></span></span>
+                </div>
 
-<div class="label">投資額</div>
-<div th:text="${holding.totalBuyAmount} + ' 円'"></div>
+                <div class="info-row">
+                    <span>投資額</span>
+                    <span>¥<span th:text="${#numbers.formatInteger(h.totalBuyAmount, 0, 'COMMA')}"></span></span>
+                </div>
 
-</div>
+                <div class="info-row highlight">
+                    <span>評価額</span>
+                    <span>¥<span th:text="${#numbers.formatInteger(h.holdingAmount, 0, 'COMMA')}"></span></span>
+                </div>
 
-<div class="button-group">
+                <!-- ボタン -->
+                <div class="actions">
+                    <a class="btn btn-buy"
+                       th:href="@{/trades/buy/add/{stockId}/{accountType}
+                       (stockId=${h.stockId}, accountType=${h.accountType})}">
+                        買い増し
+                    </a>
 
-<a class="btn btn-buy"
-   th:href="@{/trades/buy/add/{id}/{accountType}(id=${stock.id},accountType=${holding.accountType})}">
-買い増し
-</a>
+                    <a class="btn btn-secondary"
+                       th:href="@{/dividends/add/{stockId}/{accountType}
+                       (stockId=${h.stockId}, accountType=${h.accountType})}">
+                        配当登録
+                    </a>
+                </div>
 
-<a class="btn btn-dividend"
-   th:href="@{/dividends/add/{id}/{accountType}(id=${stock.id},accountType=${holding.accountType})}">
-配当登録
-</a>
+            </div>
 
-</div>
+        </div>
 
-</div>
+    </div>
 
-<div class="card">
+    <!-- ================= -->
+    <!-- 配当履歴 -->
+    <!-- ================= -->
+    <div class="section">
 
-<h2>配当履歴</h2>
+        <h2>配当履歴</h2>
 
-<table>
+        <table class="stock-table">
 
-<thead>
-<tr>
-<th>配当日</th>
-<th>金額</th>
-<th>メモ</th>
-</tr>
-</thead>
+            <thead>
+            <tr>
+                <th>日付</th>
+                <th class="right">配当額</th>
+                <th>口座</th>
+                <th>メモ</th>
+            </tr>
+            </thead>
 
-<tbody>
+            <tbody>
 
-<tr th:each="d : ${dividends}">
-<td th:text="${d.dividendDate}"></td>
-<td th:text="${d.amount} + ' 円'"></td>
-<td th:text="${d.memo}"></td>
-</tr>
+            <tr th:each="d : ${dividends}">
+                <td th:text="${d.dividendDate}"></td>
 
-</tbody>
+                <td class="right">
+                    ¥<span th:text="${#numbers.formatInteger(d.amount, 0, 'COMMA')}"></span>
+                </td>
 
-</table>
+                <td th:text="${d.accountType}"></td>
+                <td th:text="${d.memo}"></td>
+            </tr>
 
-</div>
+            </tbody>
+
+        </table>
+
+    </div>
 
 </div>
 

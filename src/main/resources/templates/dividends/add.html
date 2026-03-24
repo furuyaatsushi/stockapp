@@ -2,9 +2,10 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>配当登録</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
-
+<div th:replace="~{layout/header :: header}"></div>
 <h2>配当登録</h2>
 
 <form th:action="@{/dividends/add}" th:object="${dividendRequest}" method="post">

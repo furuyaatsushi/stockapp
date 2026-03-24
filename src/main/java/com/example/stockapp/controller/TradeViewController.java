@@ -203,18 +203,27 @@ public class TradeViewController {
     }
 
     @GetMapping("/stocks/{id}")
-    public String stockDetail(@PathVariable Long id, Model model) {
+    public String stockDetail(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetails userDetails,
+            Model model) {
+
+        User user = userRepository
+                .findByUsername(userDetails.getUsername())
+                .orElseThrow();
 
         Stock stock = stockRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("銘柄が見つかりません"));
 
-        StockHoldingDto holding = stockTradeService.getStockHolding(stock.getId());
+        // ★ ここ追加
+        List<StockHoldingDto> holdings =
+                stockTradeService.getHoldingsByStock(user, id);
 
         List<Dividend> dividends =
                 dividendRepository.findByStockIdOrderByDividendDateDesc(id);
 
         model.addAttribute("stock", stock);
-        model.addAttribute("holding", holding);
+        model.addAttribute("holdings", holdings); // ★追加
         model.addAttribute("dividends", dividends);
 
         return "stocks/detail";

@@ -1,14 +1,24 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
+
 <div th:fragment="header">
-    <nav style="background:#222;padding:10px;">
-        <a th:href="@{/stocks}" style="color:white;margin-right:15px;">保有一覧</a>
-        <a th:href="@{/trades/buy/new}" style="color:white;margin-right:15px;">新規購入</a>
-        <a th:href="@{/trades/sell}" style="color:white;margin-right:15px;">売却</a>
-        <a th:href="@{/trades/history}" style="color:white;margin-right:15px;">取引履歴</a>
-        <a th:href="@{/trades/sell-history}" style="color:white;">売却損益</a>
+    <nav class="navbar">
+
+        <div class="nav-left">
+            <a class="logo" th:href="@{/stocks}">StockApp</a>
+        </div>
+
+        <div class="nav-right">
+            <a th:href="@{/stocks}" class="nav-item">保有一覧</a>
+            <a th:href="@{/trades/buy/new}" class="nav-item">新規購入</a>
+            <a th:href="@{/trades/sell}" class="nav-item">売却</a>
+            <a th:href="@{/trades/history}" class="nav-item">取引履歴</a>
+            <a th:href="@{/trades/sell-history}" class="nav-item">売却損益</a>
+        </div>
+
     </nav>
 </div>
+
 </body>
 </html>

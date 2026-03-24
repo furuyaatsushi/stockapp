@@ -50,6 +50,8 @@ public interface StockTradeRepository
             Stock stock
     );
 
+    List<StockTrade> findByUserAndStockId(User user, Long stockId);
+
     //現在保有数取得
     @Query("""
     SELECT SUM(
