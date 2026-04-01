@@ -8,50 +8,64 @@
 <body>
 <div th:replace="layout/header :: header"></div>
 
-<h1>株の新規購入</h1>
+<div class="container">
 
-<form th:action="@{/trades/buy/new}" method="post">
+    <div class="form-card">
 
-    <div>
-        <label>銘柄コード</label>
-        <input type="text" name="stockCode" required>
+        <div class="form-title">株の新規購入</div>
+
+        <form th:action="@{/trades/buy/new}" method="post">
+
+            <!-- 銘柄コード -->
+            <div class="form-group">
+                <label>銘柄コード</label>
+                <input type="text" name="stockCode" required placeholder="例: 7203">
+            </div>
+
+            <!-- 銘柄名 -->
+            <div class="form-group">
+                <label>銘柄名</label>
+                <input type="text" name="stockName" required placeholder="例: トヨタ自動車">
+            </div>
+
+            <!-- 数量 -->
+            <div class="form-group">
+                <label>数量（株）</label>
+                <input type="number" name="quantity" required min="1">
+            </div>
+
+            <!-- 価格 -->
+            <div class="form-group">
+                <label>価格（円）</label>
+                <input type="number" name="price" step="1" required min="0">
+            </div>
+
+            <!-- 口座種別 -->
+            <div class="form-group">
+                <label>口座種別</label>
+                <select name="accountType" required>
+                    <option value="TAXABLE">特定口座</option>
+                    <option value="NISA">NISA</option>
+                </select>
+            </div>
+
+            <!-- 日付 -->
+            <div class="form-group">
+                <label>取引日</label>
+                <input type="date" name="tradeDate" required>
+            </div>
+
+            <!-- ボタン -->
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">購入する</button>
+                <a href="/stocks" class="btn">戻る</a>
+            </div>
+
+        </form>
+
     </div>
 
-    <div>
-        <label>銘柄名</label>
-        <input type="text" name="stockName" required>
-    </div>
-
-    <div>
-        <label>数量</label>
-        <input type="number" name="quantity" required>
-    </div>
-
-    <div>
-        <label>価格</label>
-        <input type="number" name="price" step="1" required>
-    </div>
-
-    <div>
-        <label>口座種別</label>
-        <select name="accountType" required>
-            <option value="TAXABLE">特定口座</option>
-            <option value="NISA">NISA</option>
-        </select>
-    </div>
-
-    <div>
-        <label>取引日</label>
-        <input type="date" name="tradeDate" required>
-    </div>
-
-    <button type="submit">購入</button>
-
-</form>
-
-<p>
-    <a href="/stocks">一覧に戻る</a>
-</p>
+</div>
 
 </body>
 </html>

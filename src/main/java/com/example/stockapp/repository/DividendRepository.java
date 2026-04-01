@@ -17,4 +17,8 @@ public interface DividendRepository extends JpaRepository<Dividend, Long> {
     List<Dividend> findByUserAndStockOrderByDividendDateDesc(User user, Stock stock);
 
     List<Dividend> findByStockIdOrderByDividendDateDesc(Long stockId);
+
+    List<Dividend> findByUserAndStockId(User user, Long stockId);
+
+    List<Dividend> findByUser_IdAndStock_Id(Long userId, Long stockId);
 }

@@ -6,47 +6,72 @@
     <title>株の買い増し</title>
 </head>
 <body>
+
 <div th:replace="layout/header :: header"></div>
 
-<h1>株の追加購入</h1>
+<div class="container">
 
-<form th:action="@{/trades/buy/add}"
-      th:object="${addBuyRequest}"
-      method="post">
+    <div class="form-card">
 
-    <input type="hidden" th:field="*{stockId}" />
-    <input type="hidden" th:field="*{accountType}" />
+        <div class="form-title">株の追加購入</div>
 
-    <div>
-        <label>銘柄</label>
-        <div>
-            <span th:text="${stock.stockCode}"></span>
-            <span th:text="${stock.stockName}"></span>
-            <span th:text="${accountType}"></span>
-        </div>
+        <form th:action="@{/trades/buy/add}"
+              th:object="${addBuyRequest}"
+              method="post">
+
+            <!-- hidden -->
+            <input type="hidden" th:field="*{stockId}" />
+            <input type="hidden" th:field="*{accountType}" />
+
+            <!-- 銘柄情報（固定表示） -->
+            <div class="form-group">
+                <label>銘柄</label>
+                <div>
+                    <span th:text="${stock.stockCode}"></span>
+                    <span th:text="${stock.stockName}"></span>
+                </div>
+            </div>
+
+            <!-- 口座種別（日本語表示 + 色分け） -->
+            <div class="form-group">
+                <label>口座種別</label>
+                <div th:text="${accountType.displayName}"
+                     th:classappend="${accountType.displayName == 'NISA'} ? 'nisa-label' : 'taxable-label'">
+                </div>
+            </div>
+
+            <!-- 数量 -->
+            <div class="form-group">
+                <label>数量（株）</label>
+                <input type="number" th:field="*{quantity}" required min="1">
+            </div>
+
+            <!-- 価格 -->
+            <div class="form-group">
+                <label>価格（円）</label>
+                <input type="number" th:field="*{price}" required min="0">
+            </div>
+
+            <!-- 日付（デフォルト今日） -->
+            <div class="form-group">
+                <label>取引日</label>
+                <input type="date"
+                       th:field="*{tradeDate}"
+                       th:value="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}"
+                       required>
+            </div>
+
+            <!-- ボタン -->
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">追加購入する</button>
+                <a href="/stocks" class="btn">戻る</a>
+            </div>
+
+        </form>
+
     </div>
 
-    <div>
-        <label>数量</label>
-        <input type="number" th:field="*{quantity}" required>
-    </div>
-
-    <div>
-        <label>価格</label>
-        <input type="number" th:field="*{price}" required>
-    </div>
-
-    <div>
-        <label>取引日</label>
-        <input type="date" th:field="*{tradeDate}" required>
-    </div>
-
-    <button type="submit">追加購入</button>
-</form>
-
-<p>
-    <a href="/stocks">一覧に戻る</a>
-</p>
+</div>
 
 </body>
 </html>

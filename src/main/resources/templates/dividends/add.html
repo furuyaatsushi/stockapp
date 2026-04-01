@@ -5,49 +5,102 @@
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
+
 <div th:replace="~{layout/header :: header}"></div>
-<h2>配当登録</h2>
 
-<form th:action="@{/dividends/add}" th:object="${dividendRequest}" method="post">
+<div class="container">
 
-    <!-- hidden -->
-    <input type="hidden" th:field="*{stockId}" />
-    <input type="hidden" th:field="*{accountType}" />
+    <div class="form-card">
 
-    <!-- 銘柄表示 -->
-    <div>
-        <label>銘柄</label>
-        <div>
-            <span th:text="${stock.stockCode}"></span>
-            <span th:text="${stock.stockName}"></span>
-            <span th:text="${accountType == T(com.example.stockapp.entity.AccountType).NISA ? '(NISA)' : '(特定)'}"></span>
-        </div>
+        <div class="form-title">配当登録</div>
+
+        <form th:action="@{/dividends/add}"
+              th:object="${dividendRequest}"
+              method="post">
+
+            <!-- hidden -->
+            <input type="hidden" th:field="*{stockId}" />
+            <input type="hidden" th:field="*{accountType}" />
+
+            <!-- 銘柄情報 -->
+            <div class="form-group">
+                <label>銘柄</label>
+                <div>
+                    <span th:text="${stock.stockCode}"></span>
+                    <span th:text="${stock.stockName}"></span>
+                </div>
+            </div>
+
+            <!-- 口座種別 -->
+            <div class="form-group">
+                <label>口座種別</label>
+                <div th:text="${accountType.displayName}"
+                     th:classappend="${accountType.name() == 'NISA'} ? 'nisa-label' : 'taxable-label'">
+                </div>
+            </div>
+
+            <!-- 配当額 -->
+            <div class="form-group">
+                <label>配当額（円）</label>
+                <input type="number"
+                       step="1"
+                       th:field="*{amount}"
+                       required min="0"
+                       id="amountInput"/>
+            </div>
+
+            <!-- 配当日 -->
+            <div class="form-group">
+                <label>配当日</label>
+                <input type="date"
+                       th:field="*{dividendDate}"
+                       th:value="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}"
+                       required />
+            </div>
+
+            <!-- メモ -->
+            <div class="form-group">
+                <label>メモ</label>
+                <input type="text"
+                       th:field="*{memo}"
+                       placeholder="任意（例：中間配当など）"/>
+            </div>
+
+            <!-- 確認表示（ちょいUX向上） -->
+            <div class="form-group">
+                <label>入力確認</label>
+                <div id="preview">-</div>
+            </div>
+
+            <!-- ボタン -->
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">登録する</button>
+                <a href="/stocks" class="btn">戻る</a>
+            </div>
+
+        </form>
+
     </div>
 
-    <div>
-        <label>配当額</label>
-        <input type="number"
-               step="1"
-               th:field="*{amount}"
-               required />
-    </div>
+</div>
 
-    <div>
-        <label>配当日</label>
-        <input type="date"
-               th:field="*{dividendDate}"
-               required />
-    </div>
+<script>
+    const amountInput = document.getElementById("amountInput");
+    const preview = document.getElementById("preview");
 
-    <div>
-        <label>メモ</label>
-        <input type="text"
-               th:field="*{memo}" />
-    </div>
+    function updatePreview() {
+        const amount = Number(amountInput.value);
 
-    <button type="submit">登録</button>
+        if (!amount) {
+            preview.innerText = "-";
+            return;
+        }
 
-</form>
+        preview.innerText = amount.toLocaleString() + " 円";
+    }
+
+    amountInput.addEventListener("input", updatePreview);
+</script>
 
 </body>
 </html>

@@ -6,71 +6,146 @@
     <title>売却</title>
 </head>
 <body>
+
 <div th:replace="layout/header :: header"></div>
 
-<h2>株式売却</h2>
+<div class="container">
 
-<div th:if="${errorMessage}" style="color:red">
-    <p th:text="${errorMessage}"></p>
+    <div class="form-card">
+
+        <div class="form-title">株式売却</div>
+
+        <!-- エラー表示 -->
+        <div th:if="${errorMessage}" class="error">
+            <p th:text="${errorMessage}"></p>
+        </div>
+
+        <form th:action="@{/trades/sell}"
+              th:object="${sellRequest}"
+              method="post">
+
+            <!-- 銘柄選択 -->
+            <div class="form-group">
+                <label>銘柄</label>
+
+                <select th:field="*{stockId}" id="stockSelect" required>
+                    <option th:each="holding : ${holdings}"
+                            th:value="${holding.stockId}"
+                            th:data-account="${holding.accountType}"
+                            th:data-quantity="${holding.quantity}"
+                            th:data-price="${holding.averagePrice}"
+                            th:text="${holding.stockCode + ' '
+                                    + holding.stockName
+                                    + '（'
+                                    + holding.accountType.displayName
+                                    + ' / 保有:' + holding.quantity + '株）'}">
+                    </option>
+                </select>
+            </div>
+
+            <!-- hidden -->
+            <input type="hidden" th:field="*{accountType}" id="accountType"/>
+
+            <!-- 保有情報表示（重要） -->
+            <div class="form-group">
+                <label>現在の保有</label>
+                <div id="holdingInfo"></div>
+            </div>
+
+            <!-- 売却価格 -->
+            <div class="form-group">
+                <label>売却価格（円）</label>
+                <input type="number"
+                       step="1"
+                       th:field="*{price}"
+                       required min="0" />
+            </div>
+
+            <!-- 数量 -->
+            <div class="form-group">
+                <label>数量（株）</label>
+                <input type="number"
+                       th:field="*{quantity}"
+                       required min="1"
+                       id="quantityInput" />
+            </div>
+
+            <!-- 日付 -->
+            <div class="form-group">
+                <label>売却日</label>
+                <input type="date"
+                       th:field="*{tradeDate}"
+                       th:value="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}"
+                       required />
+            </div>
+
+            <!-- 簡易損益表示 -->
+            <div class="form-group">
+                <label>想定損益</label>
+                <div id="profitPreview">-</div>
+            </div>
+
+            <!-- ボタン -->
+            <div class="form-actions">
+                <button type="submit" class="btn btn-danger">売却する</button>
+                <a href="/stocks" class="btn">戻る</a>
+            </div>
+
+        </form>
+
+    </div>
+
 </div>
 
-<form th:action="@{/trades/sell}"
-      th:object="${sellRequest}"
-      method="post">
-
-    <div>
-        <label>銘柄</label>
-
-        <select th:field="*{stockId}" id="stockSelect" required>
-            <option th:each="holding : ${holdings}"
-                    th:value="${holding.stockId}"
-                    th:data-account="${holding.accountType}"
-                    th:text="${holding.stockCode + ' '
-                            + holding.stockName
-                            + ' ('
-                            + (holding.accountType == T(com.example.stockapp.entity.AccountType).NISA ? 'NISA' : '特定')
-                            + ' / 保有:' + holding.quantity + ')'}">
-            </option>
-        </select>
-    </div>
-
-    <input type="hidden" th:field="*{accountType}" id="accountType"/>
-
-    <div>
-        <label>売却価格</label>
-        <input type="number"
-               step="1"
-               th:field="*{price}"
-               required />
-    </div>
-
-    <div>
-        <label>数量</label>
-        <input type="number" th:field="*{quantity}" required />
-    </div>
-
-    <div>
-        <label>売却日</label>
-        <input type="date" th:field="*{tradeDate}" required />
-    </div>
-
-    <button type="submit">売却</button>
-
-</form>
-
 <script>
-
     const select = document.getElementById("stockSelect");
     const accountInput = document.getElementById("accountType");
+    const holdingInfo = document.getElementById("holdingInfo");
+    const quantityInput = document.getElementById("quantityInput");
+    const priceInput = document.querySelector("[name='price']");
+    const profitPreview = document.getElementById("profitPreview");
 
-    function updateAccountType() {
+    function updateUI() {
         const selected = select.options[select.selectedIndex];
-        accountInput.value = selected.dataset.account;
+
+        const account = selected.dataset.account;
+        const quantity = Number(selected.dataset.quantity);
+        const avgPrice = Number(selected.dataset.price);
+
+        // hiddenセット
+        accountInput.value = account;
+
+        // 保有情報表示
+        holdingInfo.innerText =
+            "保有: " + quantity + "株 / 平均取得: " + avgPrice.toLocaleString() + "円";
+
+        // 数量の上限制御
+        quantityInput.max = quantity;
+
+        updateProfit();
     }
 
-    select.addEventListener("change", updateAccountType);
+    function updateProfit() {
+        const selected = select.options[select.selectedIndex];
 
-    // 初期値
-    updateAccountType();
+        const avgPrice = Number(selected.dataset.price);
+        const sellPrice = Number(priceInput.value);
+        const qty = Number(quantityInput.value);
 
+        if (!sellPrice || !qty) {
+            profitPreview.innerText = "-";
+            return;
+        }
+
+        const profit = (sellPrice - avgPrice) * qty;
+
+        profitPreview.innerText =
+            profit.toLocaleString() + " 円";
+    }
+
+    select.addEventListener("change", updateUI);
+    quantityInput.addEventListener("input", updateProfit);
+    priceInput.addEventListener("input", updateProfit);
+
+    updateUI();
 </script>

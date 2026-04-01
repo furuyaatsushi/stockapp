@@ -83,6 +83,47 @@
 
     </div>
 
+    <div class="section">
+
+        <h2>年間利回り</h2>
+
+        <div th:if="${#lists.isEmpty(yearlyYield)}">
+            <p>データがありません</p>
+        </div>
+
+        <table class="stock-table" th:if="${!#lists.isEmpty(yearlyYield)}">
+
+            <thead>
+            <tr>
+                <th>年</th>
+                <th class="right">配当</th>
+                <th class="right">投資額</th>
+                <th class="right">利回り</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            <tr th:each="y : ${yearlyYield}">
+                <td th:text="${y.year}"></td>
+
+                <td class="right"
+                    th:text="${#numbers.formatInteger(y.totalDividend, 0, 'COMMA')} + ' 円'">
+                </td>
+
+                <td class="right"
+                    th:text="${#numbers.formatInteger(y.totalInvestment, 0, 'COMMA')} + ' 円'">
+                </td>
+
+                <td class="right"
+                    th:text="${#numbers.formatDecimal(y.yield, 1, 2)} + ' %'">
+                </td>
+            </tr>
+            </tbody>
+
+        </table>
+
+    </div>
+
     <!-- ================= -->
     <!-- 配当履歴 -->
     <!-- ================= -->

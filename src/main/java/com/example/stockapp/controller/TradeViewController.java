@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 
 import com.example.stockapp.dto.AddBuyRequest;
+import com.example.stockapp.dto.DividendYearlyDto;
 import com.example.stockapp.dto.NewBuyRequest;
 import com.example.stockapp.dto.SellRequest;
 import com.example.stockapp.dto.StockHoldingDto;
@@ -23,22 +24,26 @@ import com.example.stockapp.entity.User;
 import com.example.stockapp.repository.DividendRepository;
 import com.example.stockapp.repository.StockRepository;
 import com.example.stockapp.repository.UserRepository;
+import com.example.stockapp.service.DividendService;
 import com.example.stockapp.service.StockTradeService;
 
 @Controller
 public class TradeViewController {
 
     private final StockTradeService stockTradeService;
+    private final DividendService dividendService;
     private final UserRepository userRepository;
     private final StockRepository stockRepository;
     private final DividendRepository dividendRepository;
 
     public TradeViewController(
             StockTradeService stockTradeService,
+            DividendService dividendService,
             UserRepository userRepository,
             StockRepository stockRepository,
             DividendRepository dividendRepository) {
         this.stockTradeService = stockTradeService;
+        this.dividendService = dividendService;
         this.userRepository = userRepository;
         this.stockRepository = stockRepository;
         this.dividendRepository = dividendRepository;
@@ -222,9 +227,13 @@ public class TradeViewController {
         List<Dividend> dividends =
                 dividendRepository.findByStockIdOrderByDividendDateDesc(id);
 
+        List<DividendYearlyDto> yearlyYield =
+            dividendService.getYearlyYieldByStock(user, id);
+
         model.addAttribute("stock", stock);
         model.addAttribute("holdings", holdings); // ★追加
         model.addAttribute("dividends", dividends);
+        model.addAttribute("yearlyYield", yearlyYield);
 
         return "stocks/detail";
     }

@@ -179,11 +179,12 @@ public class StockTradeService {
         stockTradeRepository.save(trade);
     }
 
-    @Transactional
+   @Transactional
     public void buyNewStock(User user, NewBuyRequest request) {
 
+        // 銘柄はユーザー関係なく取得
         Stock stock = stockRepository
-                .findByUserAndStockCode(user, request.getStockCode())
+                .findByStockCode(request.getStockCode())
                 .map(existingStock -> {
 
                     // 名前チェック
@@ -196,16 +197,15 @@ public class StockTradeService {
                 })
                 .orElseGet(() -> {
 
-                    // 新規銘柄作成
+                    // 新規銘柄作成（userは持たせない）
                     Stock newStock = new Stock();
-                    newStock.setUser(user);
                     newStock.setStockCode(request.getStockCode());
                     newStock.setStockName(request.getStockName());
                     return stockRepository.save(newStock);
 
                 });
 
-        // 取引作成
+        // 取引作成（ここでユーザー紐付け）
         StockTrade trade = new StockTrade();
         trade.setStock(stock);
         trade.setUser(user);
@@ -259,9 +259,9 @@ public class StockTradeService {
 
         // ② 銘柄取得（必ず user 境界をかける）
         Stock stock = stockRepository
-                .findByIdAndUser_Id(request.getStockId(), user.getId())
-                .orElseThrow(() -> 
-                        new IllegalArgumentException("銘柄が存在しません"));
+            .findById(request.getStockId())
+            .orElseThrow(() ->
+                    new IllegalArgumentException("銘柄が存在しません"));
 
         // ③ 現在保有数量を計算
         Integer currentQuantity =
@@ -282,12 +282,7 @@ public class StockTradeService {
                     + currentQuantity + "株）");
         }
 
-        AccountType accountType =
-                stockTradeRepository
-                        .findTopByUserAndStockOrderByTradeDateAsc(user, stock)
-                        .orElseThrow(() ->
-                                new IllegalArgumentException("取引履歴が存在しません"))
-                        .getAccountType();
+        AccountType accountType = request.getAccountType();
 
         // ① 平均取得単価を取得
         BigDecimal averagePrice =
@@ -430,7 +425,7 @@ public class StockTradeService {
     public List<StockHoldingDto> getHoldingsByStock(User user, Long stockId) {
 
         List<StockTrade> trades =
-                stockTradeRepository.findByUserAndStockId(user, stockId);
+            stockTradeRepository.findByUser_IdAndStock_Id(user.getId(), stockId);
 
         Map<AccountType, List<StockTrade>> grouped =
                 trades.stream().collect(Collectors.groupingBy(StockTrade::getAccountType));
@@ -442,11 +437,24 @@ public class StockTradeService {
             AccountType accountType = entry.getKey();
             List<StockTrade> list = entry.getValue();
 
-            int quantity = list.stream().mapToInt(StockTrade::getQuantity).sum();
+            int quantity = list.stream()
+                .mapToInt(t ->
+                        t.getTradeType() == TradeType.BUY
+                                ? t.getQuantity()
+                                : -t.getQuantity()
+                )
+                .sum();
 
-            BigDecimal totalBuy = list.stream()
-                    .map(t -> t.getPrice().multiply(BigDecimal.valueOf(t.getQuantity())))
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+           BigDecimal totalBuy = list.stream()
+                .map(t -> {
+                    BigDecimal amount =
+                            t.getPrice().multiply(BigDecimal.valueOf(t.getQuantity()));
+
+                    return t.getTradeType() == TradeType.BUY
+                            ? amount
+                            : amount.negate();
+                })
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
             BigDecimal avgPrice = quantity == 0
                     ? BigDecimal.ZERO
